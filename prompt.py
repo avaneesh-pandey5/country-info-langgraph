@@ -110,7 +110,7 @@ Output Format
 
 {{
     "country":"Common name of the Country that you picked.",
-    "answer": "Answer of the given question"
+    "answer": "Answer of the given question in one or two lines"
 }}
 
 ----------------------------------------
