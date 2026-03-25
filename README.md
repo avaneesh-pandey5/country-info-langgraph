@@ -25,6 +25,9 @@ A LangGraph-based country question-answering agent that:
 
 ## How It Works
 
+The app is currently live [here](https://country-info-langgraph.streamlit.app/) 
+
+
 The workflow is defined in `main.py` using LangGraph.
 
 ### Main Nodes
