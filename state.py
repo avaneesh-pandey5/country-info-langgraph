@@ -9,6 +9,7 @@ class HumanizedAnswer(TypedDict):
     answer: str
 
 class State:
+    logs: List[Any]
     llm_model_name: str
     question_from_user: str
     intent_llm_response: IntentResponse

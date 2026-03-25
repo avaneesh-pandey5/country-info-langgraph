@@ -1,55 +1,42 @@
-from langgraph.graph import StateGraph
-import dotenv
-from state import State
+import streamlit as st
+import io
+import sys
+from main import app, initial_state
 
-from nodes.start_node import start_node
-from nodes.intent_detection import intent_detection
-from nodes.api_calling import api_calling
-from nodes.fetch_relevant_columns import fetch_relevant_columns
-from nodes.fetch_relevant_keys_from_response import fetch_relevant_keys_from_response
-from nodes.humanized_response import humanized_response
-from nodes.end_node import end_node
+st.set_page_config(page_title="LangGraph Debug UI")
 
-from conditions.call_api_condition import call_api_condition
-from conditions.fetch_relevant_data_condition import fetch_relevant_data_condition
-from conditions.humanized_response_condition import humanized_response_condition
+st.title("Country Detail Agent using LangGraph")
 
-dotenv.load_dotenv()
+question = st.text_input("Enter your question:")
 
-workflow = StateGraph(State)
+def render_log(log):
+    """Render log based on its type safely"""
+    if isinstance(log, dict):
+        try:
+            st.table(log)
+        except:
+            st.write(log)
+    elif isinstance(log, list):
+        for item in log:
+            render_log(item)
+    elif isinstance(log, (str, int, float, bool)):
+        st.write(log)
+    elif log is None:
+        st.write("None")
+    else:
+        st.write(str(log))
+if st.button("Run Workflow") and question.strip() != "":
+    state = initial_state.copy()
+    state["question_from_user"] = question
 
-workflow.add_node("start",start_node)
-workflow.add_node("intent_detection",intent_detection)
-workflow.add_node("api_calling",api_calling)
-workflow.add_node("fetch_relevant_columns",fetch_relevant_columns)
-workflow.add_node("fetch_relevant_keys_from_response",fetch_relevant_keys_from_response)
-workflow.add_node("humanized_response",humanized_response)
-workflow.add_node("end_node",end_node)
+    final_state = app.invoke(state)
 
-workflow.set_entry_point("start")
+    sys.stdout = sys.__stdout__
 
-workflow.add_edge("start","intent_detection")
-workflow.add_conditional_edges("intent_detection",call_api_condition)
-workflow.add_conditional_edges("api_calling",fetch_relevant_data_condition)
-workflow.add_conditional_edges("fetch_relevant_columns",humanized_response_condition)
-workflow.add_edge("fetch_relevant_keys_from_response","intent_detection")
-workflow.add_edge("humanized_response","end_node")
+    logs = final_state.get("logs", [])
 
-app = workflow.compile()
-
-initial_state = {
-    "llm_model_name" : "",
-    "question_from_user" : "",
-    "intent_llm_response":{},
-    "api_call_response" : {},
-    "api_call_success_code":0,
-    "relevant_data":{},
-    "valid_keys_by_llm": False,
-    "all_keys_from_response": [],
-    "humanized_answer": {},
-    "passed_relevent_keys_to_intent": False
-}
-
-final_state = app.invoke(initial_state)
-
-print("Final Answer: ", final_state["humanized_answer"])
+    if not logs:
+        st.write("No state logs")
+    else:
+        for i, log in enumerate(logs):
+            render_log(log)
